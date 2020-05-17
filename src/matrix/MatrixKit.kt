@@ -7,13 +7,8 @@ package matrix
  */
 
 import extensions.isPositive
-import java.util.*
 
-inline operator fun <reified T> Matrix.Companion.invoke() : Matrix<T> {
-    return Matrix.invoke(INITIAL_CAPACITY, INITIAL_CAPACITY)
-}
-
-inline operator fun <reified T> Matrix.Companion.invoke(rowCount: Int, colCount: Int) : Matrix<T> {
+inline operator fun <reified T> Matrix.Companion.invoke(rowCount: Int = INITIAL_CAPACITY, colCount: Int = INITIAL_CAPACITY) : Matrix<T> {
     val isSizeCorrect = rowCount.isPositive && colCount.isPositive
 
     if (!isSizeCorrect) {
@@ -28,7 +23,7 @@ inline operator fun <reified T> Matrix.Companion.invoke(rowCount: Int, colCount:
 /**
  * Read Matrix
  */
-inline fun <reified T> Scanner.readMatrix() : Matrix<T>? where T : Number {
+inline fun <reified T> Matrix.Companion.readMatrix(cls: Class<T> = T::class.java): Matrix<T>? where T : Number {
     println("Enter row count:")
     val rowCount = readLine()?.toInt() ?: return null
     println("Enter col count:")
@@ -37,12 +32,30 @@ inline fun <reified T> Scanner.readMatrix() : Matrix<T>? where T : Number {
     val matrix = Matrix<T>(rowCount, colCount)
 
     println("Enter your Matrix in one line:")
-    val numbers = readLine()?.split(" ")?.map { it as T }
+    val numbers = readLine()?.split(" ")
+    if (numbers?.size != rowCount * colCount) {
+        throw java.lang.IllegalArgumentException("Size of entered values list is not equal to entered size")
+    }
+
+    val numberTypeT: List<Any>
+    try {
+        numberTypeT = numbers.map {
+            when (cls) {
+                java.lang.Integer::class.java -> it.toInt()
+                java.lang.Long::class.java -> it.toLong()
+                java.lang.Double::class.java -> it.toDouble()
+                java.lang.Float::class.java -> it.toFloat()
+                else -> throw java.lang.IllegalArgumentException("Entered value is not a number: ${it::class.java.simpleName}")
+            }
+        }
+    } catch (ex: NumberFormatException) {
+        throw java.lang.IllegalArgumentException("Incorrect input")
+    }
 
     var count = 0
     repeat(rowCount) { i ->
         repeat(colCount) { j ->
-            matrix[i][j] = numbers?.get(count)
+            matrix[i][j] = numberTypeT[count] as T
             count++
         }
     }
@@ -93,11 +106,11 @@ inline operator fun <reified T> T.times(matrix: Matrix<T>) = matrix * this
  * Dividing
  */
 inline operator fun <reified T> Matrix<T>.div(matrix: Matrix<T>) : Matrix<T> {
-    return calculateMatrixByOperation(this, matrix, Operation.PLUS)
+    return calculateMatrixByOperation(this, matrix, Operation.DIVIDE)
 }
 
 inline operator fun <reified T> Matrix<T>.div(element: T) : Matrix<T> {
-    return calculateByOperationWithElement(element, Operation.PLUS)
+    return calculateByOperationWithElement(element, Operation.DIVIDE)
 }
 
 inline operator fun <reified T> T.div(matrix: Matrix<T>) = matrix / this
@@ -139,6 +152,14 @@ fun <T> calculateByOperation(first: T, second: T, operation: Operation) : T {
                 Operation.MINUS -> (first - (second as Int)) as T
                 Operation.MULTIPLY -> (first * (second as Int)) as T
                 Operation.DIVIDE -> (first / (second as Int)) as T
+            }
+        }
+        is Long -> {
+            when (operation) {
+                Operation.PLUS -> (first + (second as Long)) as T
+                Operation.MINUS -> (first - (second as Long)) as T
+                Operation.MULTIPLY -> (first * (second as Long)) as T
+                Operation.DIVIDE -> (first / (second as Long)) as T
             }
         }
         is Double -> {

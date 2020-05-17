@@ -2,19 +2,33 @@
 
 package matrix
 
+import extensions.plus
+import java.lang.IllegalArgumentException
+
 /**
  * Created by Maxim Hnatiuk in 14/05/20
  */
 
 class Matrix<T> : Cloneable {
 
-    val rowCount: Int
+    var rowCount: Int = 0
         get() = mMatrix.size
+        set(value) {
+            changeRowCount(value)
+            field = value
+        }
 
-    val colCount: Int
+    var colCount: Int = 0
         get() = mMatrix[0].size
+        set(value) {
+            changeColCount(value)
+            field = value
+        }
 
     var mMatrix: Array<Array<T?>>
+        set(value) {
+            field = value
+        }
 
     companion object {
         const val INITIAL_CAPACITY = 5
@@ -37,6 +51,10 @@ class Matrix<T> : Cloneable {
     }
 
     operator fun set(indexRow: Int, row: Array<T?>) {
+        if (row.size != colCount) {
+            throw IllegalArgumentException("Parameter's row size is not equal to colCount")
+        }
+
         mMatrix[indexRow] = row
     }
 
@@ -47,20 +65,41 @@ class Matrix<T> : Cloneable {
     override fun toString(): String {
         val resultString = StringBuilder()
 
-        mMatrix.forEachIndexed { i, row ->
-            row.forEach { element ->
-                resultString.append(element.toString() + ", ")
-            }
-            if (i != rowCount - 1) {
-                resultString.append("\n")
+        mMatrix.forEach {
+            resultString plus it?.let { array ->
+                it.joinToString(prefix = "[", postfix = "]") + "\n"
             }
         }
-        resultString.delete(resultString.length - 2, resultString.length)
 
         return resultString.toString()
     }
 
     public override fun clone(): Matrix<T> {
         return Matrix(mMatrix.clone())
+    }
+
+    override fun equals(other: Any?) =
+         when {
+            this === other -> true
+            this.javaClass != other?.javaClass -> false
+            else -> this.mMatrix.contentEquals((other as Matrix<T>).mMatrix)
+        }
+
+    override fun hashCode(): Int {
+        return mMatrix.contentDeepHashCode()
+    }
+
+    private fun changeRowCount(newRowCount: Int) {
+        val newMMatrix = arrayOfNulls<Array<T>>(newRowCount)
+        repeat(rowCount) {
+            newMMatrix[it] = mMatrix[it] as Array<T>
+        }
+        mMatrix = newMMatrix as Array<Array<T?>>
+    }
+
+    private fun changeColCount(newColCount: Int) {
+        mMatrix.forEachIndexed { index, row ->
+            mMatrix[index] = row.copyOf(newColCount)
+        }
     }
 }
