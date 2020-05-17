@@ -4,6 +4,7 @@ package matrix
 
 import extensions.plus
 import java.lang.IllegalArgumentException
+import java.util.*
 
 /**
  * Created by Maxim Hnatiuk in 14/05/20
@@ -82,7 +83,16 @@ class Matrix<T> : Cloneable {
          when {
             this === other -> true
             this.javaClass != other?.javaClass -> false
-            else -> this.mMatrix.contentEquals((other as Matrix<T>).mMatrix)
+            else -> with(this) {
+                var isEqual = true
+                val otherMatrix = other as Matrix<T>
+
+                mMatrix.forEachIndexed { index, it ->
+                    isEqual = it.contentEquals(otherMatrix[index])
+                }
+
+                isEqual
+            }
         }
 
     override fun hashCode(): Int {
